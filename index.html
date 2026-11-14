@@ -1,0 +1,155 @@
+<!doctype html>
+<html lang="id">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#f5f7fb">
+  <title>QR Desk — Manajemen QR</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="styles.css">
+  <script defer src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+  <script defer src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
+  <script defer src="app.js"></script>
+</head>
+<body>
+  <section class="login-screen" id="login-screen">
+    <div class="login-art">
+      <a class="brand brand-light" href="#" aria-label="QR Desk">
+        <span class="brand-mark">Q</span><span>qr<span class="brand-muted">desk</span></span>
+      </a>
+      <div class="art-copy">
+        <span class="eyebrow light-eyebrow">RUANG KERJA DIGITAL ANDA</span>
+        <h1>Semua kode.<br><span>Satu tempat.</span></h1>
+        <p>Kelola QR, pantau aktivitas, dan catat setiap pemindaian dalam satu dashboard sederhana.</p>
+        <div class="art-code" aria-hidden="true"><div class="fake-qr"></div><span>SCAN TO CONNECT</span></div>
+      </div>
+      <span class="art-footer">QR Desk · Demo workspace</span>
+    </div>
+    <div class="login-side">
+      <div class="login-box">
+        <div class="mobile-brand brand"><span class="brand-mark">Q</span><span>qr<span class="brand-muted">desk</span></span></div>
+        <span class="eyebrow">SELAMAT DATANG KEMBALI</span>
+        <h2>Masuk ke akun</h2>
+        <p class="muted login-intro">Masuk untuk mengelola kode QR Anda.</p>
+        <form id="login-form">
+          <label for="username">Nama pengguna</label>
+          <div class="input-wrap"><span class="input-icon">＠</span><input id="username" name="username" autocomplete="username" placeholder="Masukkan nama pengguna" required></div>
+          <label for="password">Kata sandi</label>
+          <div class="input-wrap"><span class="input-icon">⌑</span><input id="password" name="password" type="password" autocomplete="current-password" placeholder="Masukkan kata sandi" required></div>
+          <p class="form-error" id="login-error" role="alert"></p>
+          <button class="button button-primary button-wide" type="submit">Masuk <span>→</span></button>
+        </form>
+        <div class="demo-hint"><span class="hint-dot"></span><span><strong>Akun demo</strong><br>admin <span class="hint-separator">·</span> qrcode123</span></div>
+        <p class="login-note">Login demo · koneksi database diatur dari dashboard</p>
+      </div>
+    </div>
+  </section>
+
+  <div class="app-shell is-hidden" id="app-shell">
+    <aside class="sidebar" id="sidebar">
+      <a class="brand sidebar-brand" href="#" aria-label="QR Desk beranda"><span class="brand-mark">Q</span><span>qr<span class="brand-muted">desk</span></span></a>
+      <div class="workspace-label">WORKSPACE</div>
+      <div class="workspace-card"><span class="workspace-avatar">D</span><span><strong>Demo Workspace</strong><small>Personal space</small></span><span class="chevron">⌄</span></div>
+      <div class="nav-label">MENU</div>
+      <nav class="main-nav" aria-label="Menu utama">
+        <button class="nav-item active" data-view="overview"><span class="nav-icon">▦</span>Ringkasan</button>
+        <button class="nav-item" data-view="codes"><span class="nav-icon qr-icon">▦</span>Data QR <span class="nav-count" id="nav-qr-count">0</span></button>
+        <button class="nav-item" data-view="scanner"><span class="nav-icon">⌗</span>Scanner</button>
+        <button class="nav-item" data-view="history"><span class="nav-icon">◷</span>Riwayat scan</button>
+      </nav>
+      <div class="sidebar-bottom">
+        <div class="storage-card"><span class="storage-icon">◫</span><div><strong id="storage-label">Penyimpanan lokal</strong><small id="storage-description">Data hanya di perangkat ini</small></div><span class="storage-dot"></span></div>
+        <button class="profile-button" id="logout-button"><span class="profile-avatar">A</span><span class="profile-copy"><strong>Admin Demo</strong><small>Administrator</small></span><span class="logout-icon">↪</span></button>
+      </div>
+    </aside>
+
+    <main class="main-area">
+      <header class="topbar">
+        <button class="mobile-menu" id="mobile-menu" aria-label="Buka menu">☰</button>
+        <div class="breadcrumb"><span>Workspace</span><b>/</b><strong id="page-title">Ringkasan</strong></div>
+        <div class="topbar-right"><button class="sheet-status-button" id="sheet-settings-button" type="button"><i id="sheet-status-dot"></i><span id="sheet-status-label">Hubungkan Spreadsheet</span></button><span class="today-label" id="today-label"></span><span class="top-avatar">A</span></div>
+      </header>
+
+      <div class="page-content">
+        <section class="page-view" id="view-overview">
+          <div class="page-heading heading-row">
+            <div><span class="eyebrow">DASHBOARD</span><h1>Ringkasan</h1><p>Pantau kode QR dan aktivitas terbaru Anda.</p></div>
+            <button class="button button-primary" data-open-create><span class="plus">＋</span> Buat QR baru</button>
+          </div>
+          <div class="welcome-banner">
+            <div><span class="banner-label">SELAMAT DATANG DI QR DESK</span><h2>Hai, Admin <span class="wave">✦</span></h2><p>Semua aktivitas QR Anda, tersusun rapi di sini.</p></div>
+            <div class="banner-graphic" aria-hidden="true"><div class="banner-ring ring-one"></div><div class="banner-ring ring-two"></div><div class="banner-qr"><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i></div></div>
+          </div>
+          <div class="stats-grid">
+            <article class="stat-card"><div class="stat-top"><span>Total kode QR</span><span class="stat-icon purple">▦</span></div><strong id="stat-qr">0</strong><small>QR tersimpan di workspace</small></article>
+            <article class="stat-card"><div class="stat-top"><span>Total pemindaian</span><span class="stat-icon blue">⌗</span></div><strong id="stat-scans">0</strong><small>Semua waktu</small></article>
+            <article class="stat-card"><div class="stat-top"><span>Scan hari ini</span><span class="stat-icon green">◷</span></div><strong id="stat-today">0</strong><small id="today-stat-caption">Aktivitas hari ini</small></article>
+            <article class="stat-card"><div class="stat-top"><span>QR aktif</span><span class="stat-icon orange">✓</span></div><strong id="stat-active">0</strong><small>Siap dipindai</small></article>
+          </div>
+          <div class="section-card">
+            <div class="card-heading"><div><h3>Aktivitas terbaru</h3><p>Pemindaian QR terakhir yang tercatat.</p></div><button class="text-button" data-navigate="history">Lihat semua <span>→</span></button></div>
+            <div class="table-wrap"><table><thead><tr><th>NAMA QR</th><th>KODE</th><th>WAKTU SCAN</th><th>SUMBER</th><th>STATUS</th></tr></thead><tbody id="recent-scans"></tbody></table><div class="empty-state" id="recent-empty"><span class="empty-mark">⌗</span><strong>Belum ada aktivitas scan</strong><span>Pemindaian QR akan muncul di sini.</span><button class="button button-secondary" data-navigate="scanner">Buka scanner</button></div></div>
+          </div>
+          <div class="bottom-grid">
+            <div class="section-card quick-card"><div class="card-heading"><div><h3>Akses cepat</h3><p>Mulai aktivitas yang sering digunakan.</p></div></div><div class="quick-actions"><button class="quick-action" data-open-create><span class="quick-icon purple">＋</span><span><strong>Buat kode QR</strong><small>Tambah QR baru ke workspace</small></span><b>→</b></button><button class="quick-action" data-navigate="scanner"><span class="quick-icon blue">⌗</span><span><strong>Scan kode QR</strong><small>Catat pemindaian dengan kamera</small></span><b>→</b></button></div></div>
+            <div class="section-card tip-card"><div class="tip-icon">✦</div><div><span class="eyebrow">DATABASE</span><h3>Sinkronisasi fleksibel</h3><p>Data QR dan scan dapat disimpan lokal atau disinkronkan ke Google Sheets.</p></div></div>
+          </div>
+        </section>
+
+        <section class="page-view is-hidden" id="view-codes">
+          <div class="page-heading heading-row"><div><span class="eyebrow">WORKSPACE</span><h1>Data QR</h1><p>Kelola dan lihat semua kode QR Anda.</p></div><button class="button button-primary" data-open-create><span class="plus">＋</span> Buat QR baru</button></div>
+          <div class="section-card table-card"><div class="card-heading"><div><h3>Semua kode QR <span class="title-count" id="codes-count">0</span></h3><p>Daftar QR yang tersedia di workspace.</p></div><div class="search-wrap"><span>⌕</span><input id="qr-search" type="search" placeholder="Cari nama atau kode..."></div></div><div class="table-wrap"><table><thead><tr><th>NAMA QR</th><th>KODE / ID</th><th>KATEGORI</th><th>DIBUAT</th><th>STATUS</th><th></th></tr></thead><tbody id="qr-list"></tbody></table><div class="empty-state" id="qr-empty"><span class="empty-mark">▦</span><strong>Belum ada kode QR</strong><span>Buat kode QR pertama Anda.</span><button class="button button-primary" data-open-create>Buat QR baru</button></div></div></div>
+        </section>
+
+        <section class="page-view is-hidden" id="view-scanner">
+          <div class="page-heading"><span class="eyebrow">PEMINDAIAN</span><h1>Scanner QR</h1><p>Arahkan kamera ke kode QR untuk mencatat waktu pemindaian.</p></div>
+          <div class="scanner-layout">
+            <div class="section-card scanner-card"><div class="card-heading"><div><h3>Pindai kode QR</h3><p>Izinkan akses kamera untuk memulai scanner.</p></div><span class="live-badge"><i></i> SCANNER</span></div>
+              <div class="camera-frame"><div id="reader"></div><div class="camera-placeholder" id="camera-placeholder"><div class="scan-frame"><span></span><span></span><span></span><span></span><i></i></div><strong>Kamera belum aktif</strong><span>Tekan tombol di bawah untuk mengaktifkan kamera.</span></div></div>
+              <div class="camera-error" id="camera-error" role="status"></div>
+              <div class="scanner-controls"><button class="button button-primary" id="start-scanner">Mulai scanner</button><button class="button button-secondary is-hidden" id="stop-scanner">Hentikan</button></div>
+              <div class="manual-entry"><span class="manual-title">Tidak bisa menggunakan kamera?</span><p>Masukkan kode QR secara manual untuk mencoba pencatatan.</p><form id="manual-scan-form"><input id="manual-code" placeholder="Contoh: QR-001" aria-label="Kode QR" required><button class="button button-secondary" type="submit">Catat scan</button></form></div>
+            </div>
+            <div class="section-card last-scan-card"><div class="card-heading"><div><h3>Hasil scan</h3><p>Informasi pemindaian terakhir.</p></div></div><div class="last-scan-content" id="last-scan"><div class="result-placeholder"><span>⌗</span><strong>Belum ada scan</strong><small>Hasil scan akan tampil di sini.</small></div></div><div class="scanner-note"><span>ⓘ</span><p>Hanya QR yang terdaftar di Data QR yang akan dicatat.</p></div></div>
+          </div>
+        </section>
+
+        <section class="page-view is-hidden" id="view-history">
+          <div class="page-heading heading-row"><div><span class="eyebrow">AKTIVITAS</span><h1>Riwayat scan</h1><p>Catatan waktu setiap kode QR dipindai.</p></div><button class="button button-secondary" id="clear-history">Hapus riwayat</button></div>
+          <div class="section-card table-card"><div class="card-heading"><div><h3>Semua pemindaian <span class="title-count" id="history-count">0</span></h3><p>Waktu dicatat berdasarkan zona waktu perangkat ini.</p></div><div class="search-wrap"><span>⌕</span><input id="history-search" type="search" placeholder="Cari nama atau kode..."></div></div><div class="table-wrap"><table><thead><tr><th>NAMA QR</th><th>KODE</th><th>TANGGAL & WAKTU</th><th>SUMBER</th><th>STATUS</th></tr></thead><tbody id="history-list"></tbody></table><div class="empty-state" id="history-empty"><span class="empty-mark">◷</span><strong>Riwayat masih kosong</strong><span>Hasil pemindaian Anda akan tercatat di halaman ini.</span><button class="button button-secondary" data-navigate="scanner">Buka scanner</button></div></div></div>
+        </section>
+      </div>
+    </main>
+  </div>
+
+  <div class="modal-backdrop is-hidden" id="qr-modal" role="presentation">
+    <section class="modal" role="dialog" aria-modal="true" aria-labelledby="modal-title">
+      <div class="modal-header"><div><span class="eyebrow">QR WORKSPACE</span><h2 id="modal-title">Buat kode QR</h2></div><button class="close-button" id="close-modal" aria-label="Tutup">×</button></div>
+      <form id="create-qr-form"><label for="qr-name">Nama QR</label><input id="qr-name" name="name" placeholder="Contoh: Menu Kafe" maxlength="48" required><label for="qr-category">Kategori</label><select id="qr-category" name="category"><option>Umum</option><option>Produk</option><option>Event</option><option>Dokumen</option><option>Website</option></select><div class="modal-actions"><button class="button button-secondary" type="button" id="cancel-modal">Batal</button><button class="button button-primary" type="submit">Buat QR</button></div></form>
+    </section>
+  </div>
+  <div class="modal-backdrop is-hidden" id="qr-preview-modal" role="presentation">
+    <section class="modal qr-preview-modal" role="dialog" aria-modal="true" aria-labelledby="qr-preview-title">
+      <div class="modal-header"><div><span class="eyebrow">QR WORKSPACE</span><h2 id="qr-preview-title">Pratinjau QR</h2></div><button class="close-button" id="close-qr-preview" aria-label="Tutup">×</button></div>
+      <div class="qr-preview-image" id="qr-preview-image"></div>
+      <div class="qr-preview-footer"><span class="code-label" id="qr-preview-code"></span><button class="button button-secondary" id="download-qr">Unduh PNG</button></div>
+    </section>
+  </div>
+  <div class="modal-backdrop is-hidden" id="sheet-settings-modal" role="presentation">
+    <section class="modal" role="dialog" aria-modal="true" aria-labelledby="sheet-settings-title">
+      <div class="modal-header"><div><span class="eyebrow">DATABASE</span><h2 id="sheet-settings-title">Hubungkan Google Sheets</h2></div><button class="close-button" id="close-sheet-settings" aria-label="Tutup">×</button></div>
+      <p class="settings-description">Masukkan URL Web App dan API key dari Apps Script. Setelah terhubung, QR dan riwayat scan akan disinkronkan otomatis.</p>
+      <form id="sheet-settings-form">
+        <label for="sheet-url">URL Web App Apps Script</label><input id="sheet-url" type="url" placeholder="https://script.google.com/macros/s/.../exec" required>
+        <label for="sheet-api-key">API key</label><input id="sheet-api-key" type="password" autocomplete="off" placeholder="64 karakter — salin nilai key saja" required>
+        <p class="form-error" id="sheet-config-error" role="status"></p>
+        <p class="settings-warning">Agar semua pengunjung tersambung otomatis, URL dan API key harus diisi di konstanta PUBLIC_SHEETS_CONFIG pada app.js. Key tersebut akan terlihat publik; gunakan hanya untuk spreadsheet demo/non-sensitif.</p>
+        <div class="modal-actions"><button class="button button-secondary" type="button" id="disconnect-sheets">Putuskan</button><button class="button button-primary" type="submit">Simpan &amp; hubungkan</button></div>
+      </form>
+    </section>
+  </div>
+  <div class="toast" id="toast" role="status"></div>
+</body>
+</html>
