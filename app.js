@@ -1,23 +1,15 @@
 (() => {
   "use strict";
 
-  const DB_KEY = "qrdesk.database.v1";
+  const DB_KEY = "qrdesk.students-database.v1";
   const AUTH_KEY = "qrdesk.authenticated";
   const SHEETS_CONFIG_KEY = "qrdesk.sheets-config.v1";
-  const SHEETS_OUTBOX_KEY = "qrdesk.sheets-outbox.v1";
+  const SHEETS_OUTBOX_KEY = "qrdesk.students-sheets-outbox.v1";
   // Fill these before publishing; values embedded in GitHub Pages are public.
   const PUBLIC_SHEETS_CONFIG = {
-    url: "https://script.google.com/macros/s/AKfycbw47gU_fqFQPQwBecPw9KqkXpb1ckIES6O5pIVgSUJ4aJ9KcBgNnj2jbC64JbDtie9GAA/exec",
+    url: "https://script.google.com/macros/s/AKfycbzqpgMLMxVU4-dWMQWb4tFwiF-ATKhDKoGk5PTk1mwZx265AQPelTN4NUwB2XUIOmptnA/exec",
     apiKey: "bcbe600c64824085a565b4de5999522589f1309ac71d48cdabae067313e70423"
   };
-  const demoRecords = [
-    { id: "1", name: "Website QR Desk", category: "Website", code: "QR-001", createdAt: "2025-01-08T09:00:00.000Z", active: true },
-    { id: "2", name: "Menu Kafe Senja", category: "Produk", code: "QR-002", createdAt: "2025-01-10T09:00:00.000Z", active: true },
-    { id: "3", name: "Tiket Event Kreatif", category: "Event", code: "QR-003", createdAt: "2025-01-12T09:00:00.000Z", active: true },
-    { id: "4", name: "Panduan Pengguna", category: "Dokumen", code: "QR-004", createdAt: "2025-01-15T09:00:00.000Z", active: true },
-    { id: "5", name: "Katalog Produk", category: "Produk", code: "QR-005", createdAt: "2025-01-19T09:00:00.000Z", active: true }
-  ];
-
   const $ = (selector) => document.querySelector(selector);
   const $$ = (selector) => [...document.querySelectorAll(selector)];
   const loginScreen = $("#login-screen");
@@ -38,7 +30,7 @@
     try {
       const saved = localStorage.getItem(DB_KEY);
       if (!saved) {
-        const seeded = { qrs: demoRecords, scans: [] };
+        const seeded = { qrs: [], scans: [] };
         localStorage.setItem(DB_KEY, JSON.stringify(seeded));
         return seeded;
       }
@@ -49,7 +41,7 @@
       return parsed;
     } catch (error) {
       console.error("Gagal membaca database lokal:", error);
-      return { qrs: demoRecords, scans: [] };
+      return { qrs: [], scans: [] };
     }
   }
 
@@ -251,7 +243,7 @@
     return sheetOutboxTask;
   }
 
-  async function synchronizeSpreadsheet(importLocalData) {
+  async function synchronizeSpreadsheet() {
     if (!sheetConfig) return;
     if (sheetSyncing) throw new Error("Sinkronisasi Google Sheets sedang berjalan. Coba lagi setelah selesai.");
     sheetSyncing = true;
@@ -260,25 +252,6 @@
       await flushSheetOutbox();
       setSheetStatus("Menyinkronkan...", "syncing");
       let remote = await requestSheet("load");
-      if (importLocalData) {
-        const remoteQrIds = new Set(remote.qrs.map((qr) => qr.id));
-        const remoteScanIds = new Set(remote.scans.map((scan) => scan.id));
-        const pending = readSheetOutbox();
-        const onlySeedQrs = database.qrs.length === demoRecords.length
-          && database.qrs.every((qr, index) => qr.id === demoRecords[index].id && qr.createdAt === demoRecords[index].createdAt)
-          && database.scans.length === 0;
-        if (!onlySeedQrs) {
-          database.qrs.filter((qr) => !remoteQrIds.has(qr.id)).forEach((qr) => {
-            pending.push({ id: `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`, action: "upsertQr", payload: { record: qr } });
-          });
-        }
-        database.scans.filter((scan) => !remoteScanIds.has(scan.id)).forEach((scan) => {
-          pending.push({ id: `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`, action: "appendScan", payload: { record: scan } });
-        });
-        saveSheetOutbox(pending);
-        await flushSheetOutbox();
-        remote = await requestSheet("load");
-      }
       if (!Array.isArray(remote.qrs) || !Array.isArray(remote.scans)) {
         throw new Error("Format data yang diterima dari spreadsheet tidak valid.");
       }
@@ -373,7 +346,7 @@
     appShell.classList.toggle("is-hidden", !authenticated);
     if (authenticated) {
       render();
-      if (sheetConfig) synchronizeSpreadsheet(sheetConfig.initialized !== true).catch((error) => showToast(`Sinkronisasi Google Sheets gagal: ${error.message}`));
+      if (sheetConfig) synchronizeSpreadsheet().catch((error) => showToast(`Sinkronisasi Google Sheets gagal: ${error.message}`));
     }
   }
 
@@ -398,7 +371,7 @@
   });
 
   function navigate(view) {
-    const titles = { overview: "Ringkasan", codes: "Data QR", scanner: "Scanner", history: "Riwayat scan" };
+    const titles = { overview: "Ringkasan", codes: "Data Siswa", scanner: "Scanner", history: "Riwayat scan" };
     $$(".page-view").forEach((section) => section.classList.toggle("is-hidden", section.id !== `view-${view}`));
     $$(".nav-item").forEach((item) => item.classList.toggle("active", item.dataset.view === view));
     $("#page-title").textContent = titles[view] || titles.overview;
@@ -425,18 +398,18 @@
     $("#stat-qr").textContent = database.qrs.length;
     $("#stat-scans").textContent = database.scans.length;
     $("#stat-today").textContent = database.scans.filter((scan) => new Date(scan.scannedAt).toDateString() === today).length;
-    $("#stat-active").textContent = database.qrs.filter((qr) => qr.active).length;
+    $("#stat-active").textContent = database.qrs.filter((qr) => qr.code).length;
     $("#nav-qr-count").textContent = database.qrs.length;
     $("#today-stat-caption").textContent = formatDate(new Date(), { day: "numeric", month: "long", year: "numeric" });
   }
 
   function qrRow(qr) {
-    return `<tr><td><span class="qr-name"><button class="qr-thumb" data-qr-preview="${escapeHtml(qr.id)}" data-qr-value="${escapeHtml(qr.code)}" aria-label="Pratinjau QR ${escapeHtml(qr.code)}"></button>${escapeHtml(qr.name)}</span></td><td><span class="code-label">${escapeHtml(qr.code)}</span></td><td>${escapeHtml(qr.category)}</td><td>${formatDate(qr.createdAt)}</td><td><span class="status-pill">Aktif</span></td><td><button class="row-action" data-delete-qr="${escapeHtml(qr.id)}" aria-label="Hapus ${escapeHtml(qr.name)}">×</button></td></tr>`;
+    return `<tr><td>${escapeHtml(qr.name)}</td><td>${escapeHtml(qr.classLast)}</td><td>${escapeHtml(qr.nisn)}</td><td><button class="qr-thumb" data-qr-preview="${escapeHtml(qr.id)}" data-qr-value="${escapeHtml(qr.code)}" aria-label="Pratinjau QR ${escapeHtml(qr.code)}"></button><span class="code-label">${escapeHtml(qr.code)}</span></td><td>${escapeHtml(qr.gender)}</td></tr>`;
   }
 
   function renderQrList() {
     const query = $("#qr-search").value.trim().toLowerCase();
-    const qrs = database.qrs.filter((qr) => `${qr.name} ${qr.code} ${qr.category}`.toLowerCase().includes(query));
+    const qrs = database.qrs.filter((qr) => `${qr.name} ${qr.classLast} ${qr.nisn} ${qr.code} ${qr.gender}`.toLowerCase().includes(query));
     $("#qr-list").innerHTML = qrs.map(qrRow).join("");
     $("#codes-count").textContent = database.qrs.length;
     $("#qr-empty").classList.toggle("is-hidden", qrs.length > 0);
@@ -455,7 +428,6 @@
     } else if (qrs.length) {
       console.error("Library pembuat QR belum tersedia.");
     }
-    $$("[data-delete-qr]").forEach((button) => button.addEventListener("click", () => deleteQr(button.dataset.deleteQr)));
   }
 
   $("#qr-list").addEventListener("click", (event) => {
@@ -552,7 +524,7 @@
     sheetConfig = { url: url.toString(), apiKey, initialized: false };
     if (!saveSheetConfig()) return;
     try {
-      await synchronizeSpreadsheet(true);
+      await synchronizeSpreadsheet();
       closeSheetSettings();
       showToast("Spreadsheet terhubung dan data berhasil disinkronkan.");
     } catch (error) {
@@ -591,61 +563,10 @@
   $("#qr-search").addEventListener("input", renderQrList);
   $("#history-search").addEventListener("input", renderHistory);
 
-  function deleteQr(id) {
-    const qr = database.qrs.find((item) => item.id === id);
-    if (!qr || !window.confirm(`Hapus "${qr.name}"? Riwayat scan yang sudah tercatat tetap disimpan.`)) return;
-    database.qrs = database.qrs.filter((item) => item.id !== id);
-    if (saveDatabase()) {
-      render();
-      syncMutation("deleteQr", { id });
-      showToast("Kode QR berhasil dihapus.");
-    }
-  }
-
-  const modal = $("#qr-modal");
-  function openModal() {
-    modal.classList.remove("is-hidden");
-    $("#qr-name").focus();
-  }
-  function closeModal() {
-    modal.classList.add("is-hidden");
-    $("#create-qr-form").reset();
-  }
-  $$("[data-open-create]").forEach((button) => button.addEventListener("click", openModal));
-  $("#close-modal").addEventListener("click", closeModal);
-  $("#cancel-modal").addEventListener("click", closeModal);
-  modal.addEventListener("click", (event) => { if (event.target === modal) closeModal(); });
   document.addEventListener("keydown", (event) => {
     if (event.key === "Escape") {
-      closeModal();
       closeQrPreview();
       closeSheetSettings();
-    }
-  });
-
-  $("#create-qr-form").addEventListener("submit", (event) => {
-    event.preventDefault();
-    const name = $("#qr-name").value.trim();
-    if (!name) return;
-    const nextNumber = database.qrs.reduce((max, qr) => {
-      const match = /^QR-(\d+)$/.exec(qr.code);
-      return match ? Math.max(max, Number(match[1])) : max;
-    }, 0) + 1;
-    const qr = {
-      id: `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
-      name,
-      category: $("#qr-category").value,
-      code: `QR-${String(nextNumber).padStart(3, "0")}`,
-      createdAt: new Date().toISOString(),
-      active: true
-    };
-    database.qrs.push(qr);
-    if (saveDatabase()) {
-      closeModal();
-      render();
-      navigate("codes");
-      syncMutation("upsertQr", { record: qr });
-      showToast("Kode QR berhasil dibuat.");
     }
   });
 
@@ -654,7 +575,7 @@
     const qr = database.qrs.find((item) => item.code.toUpperCase() === code || item.id === rawCode.trim());
     if (!qr) {
       showToast(`Kode "${rawCode}" tidak terdaftar.`);
-      $("#camera-error").textContent = "Kode QR tidak ditemukan di Data QR.";
+      $("#camera-error").textContent = "Kode QR tidak ditemukan pada data siswa.";
       return false;
     }
     $("#camera-error").textContent = "";

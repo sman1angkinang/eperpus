@@ -1,27 +1,21 @@
 const QRDESK_CONFIG = {
-  spreadsheetId: "1fexHqb3jq2cjCNHXu6eElxPKWhftugq0xdQVHe0WDqQ",
-  qrSheetName: "Data QR",
+  spreadsheetId: "1lSKwdY7P2KXfxwD8SZQ24VJv4p_uYwINpQDpHO0WzKE",
+  studentSheetId: 298938300,
   scanSheetName: "Riwayat Scan",
   apiKeyProperty: "QRDESK_API_KEY"
 };
 
-const QR_HEADERS = ["ID", "Nama QR", "Kategori", "Kode", "Dibuat (ISO)", "Status"];
+const STUDENT_HEADERS = ["Nama Lengkap", "Kelas Terakhir", "NISN", "QRCode", "Jenis Kelamin"];
 const SCAN_HEADERS = ["ID Scan", "ID QR", "Nama QR", "Kode", "Waktu Scan (ISO)", "Sumber"];
-const QR_SEED_ROWS = [
-  ["1", "Website QR Desk", "Website", "QR-001", "2025-01-08T09:00:00.000Z", "aktif"],
-  ["2", "Menu Kafe Senja", "Produk", "QR-002", "2025-01-10T09:00:00.000Z", "aktif"],
-  ["3", "Tiket Event Kreatif", "Event", "QR-003", "2025-01-12T09:00:00.000Z", "aktif"],
-  ["4", "Panduan Pengguna", "Dokumen", "QR-004", "2025-01-15T09:00:00.000Z", "aktif"],
-  ["5", "Katalog Produk", "Produk", "QR-005", "2025-01-19T09:00:00.000Z", "aktif"]
-];
 
 function initializeQrDesk() {
   const spreadsheet = SpreadsheetApp.openById(QRDESK_CONFIG.spreadsheetId);
-  const qrSheet = getOrCreateSheet_(spreadsheet, QRDESK_CONFIG.qrSheetName, QR_HEADERS);
-  getOrCreateSheet_(spreadsheet, QRDESK_CONFIG.scanSheetName, SCAN_HEADERS);
-  if (qrSheet.getLastRow() <= 1) {
-    writeRows_(qrSheet, 2, QR_SEED_ROWS);
+  const studentSheet = spreadsheet.getSheetById(QRDESK_CONFIG.studentSheetId);
+  if (!studentSheet) {
+    throw new Error("Tab sumber siswa tidak ditemukan. Periksa spreadsheetId dan studentSheetId.");
   }
+  readStudentRows_(studentSheet);
+  getOrCreateSheet_(spreadsheet, QRDESK_CONFIG.scanSheetName, SCAN_HEADERS);
 
   const properties = PropertiesService.getScriptProperties();
   let apiKey = properties.getProperty(QRDESK_CONFIG.apiKeyProperty);
@@ -58,25 +52,15 @@ function doGet(event) {
 
 function runAction_(params) {
   const spreadsheet = SpreadsheetApp.openById(QRDESK_CONFIG.spreadsheetId);
-  const qrSheet = spreadsheet.getSheetByName(QRDESK_CONFIG.qrSheetName);
+  const studentSheet = spreadsheet.getSheetById(QRDESK_CONFIG.studentSheetId);
   const scanSheet = spreadsheet.getSheetByName(QRDESK_CONFIG.scanSheetName);
-  if (!qrSheet || !scanSheet) {
+  if (!studentSheet || !scanSheet) {
     throw new Error("Sheet belum disiapkan. Jalankan initializeQrDesk terlebih dahulu.");
   }
 
   switch (params.action) {
     case "load":
-      return { qrs: readQrRows_(qrSheet), scans: readScanRows_(scanSheet) };
-    case "upsertQr":
-      return withLock_(function () {
-        upsertQr_(qrSheet, parseRecord_(params.record, "QR"));
-        return {};
-      });
-    case "deleteQr":
-      return withLock_(function () {
-        deleteById_(qrSheet, params.id);
-        return {};
-      });
+      return { qrs: readStudentRows_(studentSheet), scans: readScanRows_(scanSheet) };
     case "appendScan":
       return withLock_(function () {
         appendScan_(scanSheet, parseRecord_(params.record, "scan"));
@@ -133,36 +117,18 @@ function parseRecord_(serialized, kind) {
   return record;
 }
 
-function upsertQr_(sheet, qr) {
-  const row = [
-    requiredText_(qr.id, "ID", 100),
-    requiredText_(qr.name, "Nama QR", 80),
-    requiredText_(qr.category, "Kategori", 50),
-    requiredText_(qr.code, "Kode QR", 64),
-    requiredText_(qr.createdAt, "Waktu dibuat", 40),
-    qr.active === false ? "nonaktif" : "aktif"
-  ];
-  const existingRow = findRowById_(sheet, row[0]);
-  writeRows_(sheet, existingRow || Math.max(sheet.getLastRow() + 1, 2), [row]);
-}
-
 function appendScan_(sheet, scan) {
   const id = requiredText_(scan.id, "ID scan", 100);
   if (findRowById_(sheet, id)) return;
   const row = [
     id,
     requiredText_(scan.qrId, "ID QR", 100),
-    requiredText_(scan.label, "Nama QR", 80),
-    requiredText_(scan.code, "Kode QR", 64),
+    requiredText_(scan.label, "Nama siswa", 200),
+    requiredText_(scan.code, "Qrcode", 1000),
     requiredText_(scan.scannedAt, "Waktu scan", 40),
     scan.source === "camera" ? "camera" : "manual"
   ];
   writeRows_(sheet, Math.max(sheet.getLastRow() + 1, 2), [row]);
-}
-
-function deleteById_(sheet, id) {
-  const row = findRowById_(sheet, requiredText_(id, "ID", 100));
-  if (row) sheet.deleteRow(row);
 }
 
 function findRowById_(sheet, id) {
@@ -175,20 +141,39 @@ function findRowById_(sheet, id) {
   return 0;
 }
 
-function readQrRows_(sheet) {
-  if (sheet.getLastRow() < 2) return [];
-  return sheet.getRange(2, 1, sheet.getLastRow() - 1, QR_HEADERS.length).getValues()
-    .filter(function (row) { return row[0]; })
-    .map(function (row) {
-      return {
-        id: String(row[0]),
-        name: String(row[1]),
-        category: String(row[2]),
-        code: String(row[3]),
-        createdAt: isoString_(row[4]),
-        active: String(row[5]).toLowerCase() !== "nonaktif"
-      };
-    });
+function readStudentRows_(sheet) {
+  const lastColumn = sheet.getLastColumn();
+  if (lastColumn < 1) throw new Error("Tab sumber siswa kosong atau tidak memiliki header.");
+  const headers = sheet.getRange(1, 1, 1, lastColumn).getDisplayValues()[0]
+    .map(function (header) { return String(header).trim().toLowerCase(); });
+  const columns = STUDENT_HEADERS.map(function (header) {
+    const index = headers.indexOf(header.toLowerCase());
+    if (index < 0) throw new Error('Header "' + header + '" tidak ditemukan pada tab sumber siswa.');
+    return index + 1;
+  });
+  const lastRow = sheet.getLastRow();
+  if (lastRow < 2) return [];
+  const values = columns.map(function (column) {
+    return sheet.getRange(2, column, lastRow - 1, 1).getDisplayValues()
+      .map(function (row) { return String(row[0]).trim(); });
+  });
+  const seenCodes = Object.create(null);
+  return values[3].map(function (code, index) {
+    if (!code) return null;
+    if (seenCodes[code]) {
+      throw new Error('Qrcode duplikat ditemukan pada baris ' + (index + 2) + '.');
+    }
+    seenCodes[code] = true;
+    return {
+      id: code,
+      name: values[0][index],
+      classLast: values[1][index],
+      nisn: values[2][index],
+      code: code,
+      gender: values[4][index],
+      active: true
+    };
+  }).filter(function (student) { return student !== null; });
 }
 
 function readScanRows_(sheet) {
@@ -208,7 +193,7 @@ function readScanRows_(sheet) {
 }
 
 function isoString_(value) {
-  return value instanceof Date ? value.toISOString() : String(value || "");
+    return value instanceof Date ? value.toISOString() : String(value || "");
 }
 
 function requiredText_(value, label, maxLength) {
