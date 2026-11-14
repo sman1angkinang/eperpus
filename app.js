@@ -7,8 +7,8 @@
   const SHEETS_OUTBOX_KEY = "qrdesk.sheets-outbox.v1";
   // Fill these before publishing; values embedded in GitHub Pages are public.
   const PUBLIC_SHEETS_CONFIG = {
-    url: "https://script.google.com/macros/s/AKfycbzQVWDqMmnSvlr-_sP8GdIovBFC07wt1pDDU4R4EMAFnsRo03U9Hq9LUhZzj-fp3R9V/exec",
-    apiKey: "ff333a7a0fd546ed87d5aeda403f6f410646c3e78a6849fb9cf52b7760b4fd2f"
+    url: "https://script.google.com/macros/s/AKfycbw47gU_fqFQPQwBecPw9KqkXpb1ckIES6O5pIVgSUJ4aJ9KcBgNnj2jbC64JbDtie9GAA/exec",
+    apiKey: "bcbe600c64824085a565b4de5999522589f1309ac71d48cdabae067313e70423"
   };
   const demoRecords = [
     { id: "1", name: "Website QR Desk", category: "Website", code: "QR-001", createdAt: "2025-01-08T09:00:00.000Z", active: true },

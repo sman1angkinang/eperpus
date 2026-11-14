@@ -1,5 +1,5 @@
 const QRDESK_CONFIG = {
-  spreadsheetId: "1JNrQEaX_ERqZ3kIm875JddkC9U6nJ1Yq110RXXWSFOk",
+  spreadsheetId: "1fexHqb3jq2cjCNHXu6eElxPKWhftugq0xdQVHe0WDqQ",
   qrSheetName: "Data QR",
   scanSheetName: "Riwayat Scan",
   apiKeyProperty: "QRDESK_API_KEY"
