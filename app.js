@@ -7,7 +7,7 @@
   const SHEETS_OUTBOX_KEY = "qrdesk.students-sheets-outbox.v1";
   // Fill these before publishing; values embedded in GitHub Pages are public.
   const PUBLIC_SHEETS_CONFIG = {
-    url: "https://script.google.com/macros/s/AKfycbzqpgMLMxVU4-dWMQWb4tFwiF-ATKhDKoGk5PTk1mwZx265AQPelTN4NUwB2XUIOmptnA/exec",
+    url: "https://script.google.com/macros/s/AKfycbwTDYsQD29aaHt_Ci9uLhXLuCSoDe_eXlUIP3uJtsOOhAwUALZiI0FI6brGemcKJvwx3A/exec",
     apiKey: "bcbe600c64824085a565b4de5999522589f1309ac71d48cdabae067313e70423"
   };
   const $ = (selector) => document.querySelector(selector);
